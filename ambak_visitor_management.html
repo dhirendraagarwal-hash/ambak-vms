@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AMBAK · Visitor Management</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.js"></script>
+<style>
+:root{
+  --navy:#0B1F3A;
+  --navy-light:#132C52;
+  --ink:#0B1F3A;
+  --paper:#F5F6F8;
+  --card:#FFFFFF;
+  --line:#E2E5EB;
+  --amber:#E0932A;
+  --amber-deep:#C9781A;
+  --green:#1F8A57;
+  --red:#C6402A;
+  --muted:#6B7280;
+  --font-display:'Georgia', 'Times New Roman', serif;
+  --font-body:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box;}
+body{margin:0;font-family:var(--font-body);background:var(--paper);color:var(--ink);}
+.hidden{display:none !important;}
+button{font-family:inherit;cursor:pointer;}
+input,select,textarea{font-family:inherit;}
+
+/* ===== TOPBAR ===== */
+.topbar{
+  background:var(--navy);color:#fff;padding:14px 28px;
+  display:flex;align-items:center;justify-content:space-between;
+  border-bottom:3px solid var(--amber);
+}
+.brand{display:flex;align-items:center;gap:12px;}
+.brand-mark{
+  width:38px;height:38px;border-radius:8px;background:var(--amber);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-display);font-weight:bold;font-size:19px;color:var(--navy);
+}
+.brand-text{font-family:var(--font-display);font-size:19px;letter-spacing:0.5px;}
+.brand-sub{font-size:11px;color:#B9C3D6;letter-spacing:1.5px;text-transform:uppercase;margin-top:1px;}
+.topbar-right{display:flex;align-items:center;gap:14px;font-size:13px;color:#D7DEEC;}
+.pill{
+  background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);
+  padding:5px 12px;border-radius:20px;font-size:12px;
+}
+.btn-ghost-topbar{
+  background:transparent;border:1px solid rgba(255,255,255,0.3);color:#fff;
+  padding:7px 14px;border-radius:6px;font-size:13px;
+}
+.btn-ghost-topbar:hover{background:rgba(255,255,255,0.1);}
+
+/* ===== LAYOUT ===== */
+.app-shell{display:flex;min-height:calc(100vh - 66px);}
+.sidebar{
+  width:220px;background:var(--navy-light);color:#DCE3F0;padding:20px 0;flex-shrink:0;
+}
+.side-item{
+  padding:12px 24px;font-size:14px;cursor:pointer;border-left:3px solid transparent;
+  display:flex;align-items:center;gap:10px;
+}
+.side-item:hover{background:rgba(255,255,255,0.06);}
+.side-item.active{background:rgba(224,147,42,0.15);border-left-color:var(--amber);color:#fff;font-weight:600;}
+.main{flex:1;padding:28px 32px;max-width:1200px;}
+
+.section-title{font-family:var(--font-display);font-size:24px;margin:0 0 4px 0;}
+.section-sub{color:var(--muted);font-size:13.5px;margin:0 0 22px 0;}
+
+/* ===== CARDS / GRID ===== */
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:26px;}
+.stat-card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;position:relative;overflow:hidden;}
+.stat-card::before{content:'';position:absolute;top:0;left:0;width:4px;height:100%;background:var(--amber);}
+.stat-num{font-family:var(--font-display);font-size:30px;font-weight:bold;color:var(--navy);}
+.stat-label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:0.6px;margin-top:2px;}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:22px;margin-bottom:20px;}
+.card-head{display:flex;align-items:center;justify-content:between;justify-content:space-between;margin-bottom:16px;}
+.card-head h3{margin:0;font-family:var(--font-display);font-size:17px;}
+.live-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--green);margin-right:6px;animation:pulse 1.6s infinite;}
+@keyframes pulse{0%{opacity:1;}50%{opacity:0.35;}100%{opacity:1;}}
+
+/* ===== TABLE ===== */
+table{width:100%;border-collapse:collapse;font-size:13.5px;}
+th{text-align:left;padding:10px 12px;background:#F1F3F6;color:var(--muted);font-weight:600;font-size:11.5px;text-transform:uppercase;letter-spacing:0.4px;border-bottom:1px solid var(--line);}
+td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:middle;}
+tr:hover td{background:#FAFBFC;}
+.avatar-sm{width:32px;height:32px;border-radius:50%;object-fit:cover;background:#DCE3F0;}
+.badge{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;}
+.badge-in{background:#E6F5EC;color:var(--green);}
+.badge-out{background:#EDEEF1;color:var(--muted);}
+.badge-pending{background:#FEF1DE;color:var(--amber-deep);}
+
+/* ===== FORMS ===== */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;}
+.field label{font-size:12.5px;font-weight:600;color:var(--navy);}
+.field input,.field select,.field textarea{
+  padding:10px 12px;border:1px solid var(--line);border-radius:7px;font-size:14px;background:#fff;
+}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--amber);}
+.btn{
+  padding:11px 22px;border-radius:7px;border:none;font-size:14px;font-weight:600;
+}
+.btn-primary{background:var(--navy);color:#fff;}
+.btn-primary:hover{background:var(--navy-light);}
+.btn-amber{background:var(--amber);color:var(--navy);}
+.btn-amber:hover{background:var(--amber-deep);color:#fff;}
+.btn-outline{background:transparent;border:1px solid var(--line);color:var(--ink);}
+.btn-outline:hover{border-color:var(--navy);}
+.btn-danger{background:var(--red);color:#fff;}
+.btn-sm{padding:6px 12px;font-size:12.5px;border-radius:6px;}
+
+/* ===== LOGIN ===== */
+.login-wrap{
+  min-height:100vh;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(135deg,var(--navy) 0%,#1B3B6B 60%,var(--navy) 100%);
+  padding:20px;
+}
+.login-box{background:#fff;border-radius:14px;width:100%;max-width:400px;padding:38px 34px;box-shadow:0 30px 60px rgba(0,0,0,0.35);}
+.login-logo{display:flex;flex-direction:column;align-items:center;margin-bottom:24px;}
+.login-mark{width:56px;height:56px;border-radius:12px;background:var(--amber);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:bold;font-size:26px;color:var(--navy);margin-bottom:10px;}
+.login-title{font-family:var(--font-display);font-size:22px;color:var(--navy);}
+.login-sub{font-size:12.5px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;}
+.role-tabs{display:flex;gap:8px;margin-bottom:18px;background:#F1F3F6;padding:4px;border-radius:8px;}
+.role-tab{flex:1;text-align:center;padding:8px 4px;font-size:12.5px;border-radius:6px;color:var(--muted);font-weight:600;}
+.role-tab.active{background:#fff;color:var(--navy);box-shadow:0 1px 3px rgba(0,0,0,0.12);}
+.hint{font-size:11.5px;color:var(--muted);margin-top:10px;text-align:center;}
+.kiosk-link{display:block;text-align:center;margin-top:18px;font-size:13px;color:var(--navy);font-weight:600;}
+
+/* ===== KIOSK ===== */
+.kiosk-wrap{min-height:100vh;background:linear-gradient(180deg,var(--navy) 0%,#173764 100%);padding:30px 16px;}
+.kiosk-card{max-width:520px;margin:0 auto;background:#fff;border-radius:16px;padding:34px;}
+.kiosk-head{text-align:center;margin-bottom:22px;}
+.progress-steps{display:flex;gap:6px;margin-bottom:26px;}
+.progress-steps div{flex:1;height:4px;border-radius:3px;background:var(--line);}
+.progress-steps div.done{background:var(--amber);}
+.cam-box{width:100%;aspect-ratio:4/3;background:#111;border-radius:10px;overflow:hidden;position:relative;margin-bottom:12px;}
+.cam-box video,.cam-box canvas,.cam-box img{width:100%;height:100%;object-fit:cover;}
+.qr-result{text-align:center;padding:20px;}
+#qrcode-canvas{display:inline-block;padding:14px;background:#fff;border:1px solid var(--line);border-radius:10px;}
+
+/* misc */
+.flex-between{display:flex;align-items:center;justify-content:space-between;}
+.small-muted{font-size:12px;color:var(--muted);}
+.toast{
+  position:fixed;bottom:24px;right:24px;background:var(--navy);color:#fff;
+  padding:13px 20px;border-radius:8px;font-size:13.5px;box-shadow:0 8px 24px rgba(0,0,0,0.25);
+  z-index:999;opacity:0;transform:translateY(10px);transition:all .25s;
+}
+.toast.show{opacity:1;transform:translateY(0);}
+.search-row{display:flex;gap:10px;margin-bottom:16px;}
+.search-row input{flex:1;padding:10px 12px;border:1px solid var(--line);border-radius:7px;font-size:13.5px;}
+.tab-strip{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:18px;}
+.tab-btn{padding:9px 16px;font-size:13px;font-weight:600;color:var(--muted);border-bottom:2px solid transparent;background:none;border-top:none;border-left:none;border-right:none;}
+.tab-btn.active{color:var(--navy);border-bottom-color:var(--amber);}
+.note-box{background:#FEF1DE;border:1px solid #F3D9AE;border-radius:8px;padding:12px 14px;font-size:12.5px;color:#7A4E10;margin-bottom:16px;}
+</style>
+</head>
+<body>
+
+<!-- ============ LOGIN VIEW ============ -->
+<div id="view-login" class="login-wrap">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="login-mark">A</div>
+      <div class="login-title">AMBAK</div>
+      <div class="login-sub">Visitor Management</div>
+    </div>
+    <div class="role-tabs" id="role-tabs">
+      <div class="role-tab active" data-role="admin">Admin</div>
+      <div class="role-tab" data-role="reception">Reception</div>
+      <div class="role-tab" data-role="employee">Employee</div>
+    </div>
+    <div class="field">
+      <label>Username</label>
+      <input id="login-user" placeholder="e.g. admin">
+    </div>
+    <div class="field" id="login-emp-field" style="display:none;">
+      <label>Select Employee</label>
+      <select id="login-emp-select"></select>
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <input id="login-pass" type="password" placeholder="••••••••">
+    </div>
+    <button class="btn btn-primary" style="width:100%;" onclick="doLogin()">Sign in</button>
+    <div class="hint">Demo credentials — Admin: admin/admin123 · Reception: reception/reception123 · Employee: pick name, password emp123</div>
+    <a class="kiosk-link" href="#" onclick="openKiosk();return false;">🖥️ Open Self Check-in Kiosk (no login) →</a>
+  </div>
+</div>
+
+<!-- ============ KIOSK VIEW ============ -->
+<div id="view-kiosk" class="kiosk-wrap hidden">
+  <div class="kiosk-card">
+    <div class="kiosk-head">
+      <div class="login-mark" style="margin:0 auto 10px;">A</div>
+      <div class="login-title">Welcome to AMBAK</div>
+      <div class="small-muted">Please check in below</div>
+    </div>
+    <div class="progress-steps">
+      <div id="ps1" class="done"></div><div id="ps2"></div><div id="ps3"></div>
+    </div>
+
+    <!-- step 1: details -->
+    <div id="kiosk-step1">
+      <div class="field"><label>Full Name *</label><input id="k-name" placeholder="Your full name"></div>
+      <div class="field"><label>Mobile Number *</label><input id="k-mobile" placeholder="10-digit mobile number" maxlength="10"></div>
+      <div class="field"><label>Coming From (City / Location) *</label><input id="k-location" placeholder="e.g. Gurugram"></div>
+      <div class="field"><label>Whom do you want to meet? *</label><select id="k-host"></select></div>
+      <div class="field"><label>Purpose of Visit</label><input id="k-purpose" placeholder="e.g. Interview, Meeting, Delivery"></div>
+      <button class="btn btn-amber" style="width:100%;" onclick="kioskNextToPhoto()">Continue →</button>
+    </div>
+
+    <!-- step 2: photo -->
+    <div id="kiosk-step2" class="hidden">
+      <div class="cam-box" id="cam-box">
+        <video id="cam-video" autoplay playsinline></video>
+      </div>
+      <canvas id="cam-canvas" class="hidden"></canvas>
+      <div style="display:flex;gap:10px;">
+        <button class="btn btn-outline" style="flex:1;" onclick="kioskBackToStep1()">← Back</button>
+        <button class="btn btn-amber" style="flex:1;" id="btn-capture" onclick="capturePhoto()">📸 Capture Photo</button>
+      </div>
+      <div class="small-muted" style="text-align:center;margin-top:10px;">Camera access needed. If unavailable, we'll skip this step.</div>
+    </div>
+
+    <!-- step 3: QR result -->
+    <div id="kiosk-step3" class="hidden qr-result">
+      <div style="font-size:40px;">✅</div>
+      <h3 style="font-family:var(--font-display);margin:6px 0;">Checked In!</h3>
+      <p class="small-muted" id="qr-welcome-text"></p>
+      <div id="qrcode-canvas"></div>
+      <p class="small-muted" style="margin-top:12px;">Show this QR code at reception when you leave, for quick check-out.</p>
+      <button class="btn btn-primary" style="width:100%;margin-top:16px;" onclick="resetKiosk()">Done · New Visitor</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MAIN APP ============ -->
+<div id="view-app" class="hidden">
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-mark">A</div>
+      <div>
+        <div class="brand-text">AMBAK</div>
+        <div class="brand-sub">Visitor Management</div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <span class="pill" id="topbar-role"></span>
+      <span id="topbar-clock"></span>
+      <button class="btn-ghost-topbar" onclick="openKiosk()">Kiosk Mode</button>
+      <button class="btn-ghost-topbar" onclick="logout()">Logout</button>
+    </div>
+  </div>
+  <div class="app-shell">
+    <div class="sidebar" id="sidebar"></div>
+    <div class="main" id="main-content"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ==================== STORAGE HELPERS ==================== */
+/* ============================================================
+   🔥 FIREBASE CONFIG — Realtime Database URL
+   ============================================================ */
+const FIREBASE_URL = 'https://ambak-vms-default-rtdb.asia-southeast1.firebasedatabase.app';
+
+const S = {
+  async getAll(key, fallback){
+    try{
+      const res = await fetch(`${FIREBASE_URL}/${key}.json`);
+      const data = await res.json();
+      return (data === null || data === undefined) ? fallback : data;
+    }catch(e){ console.error('Firebase read failed:', e); return fallback; }
+  },
+  async set(key, val){
+    try{
+      await fetch(`${FIREBASE_URL}/${key}.json`, {
+        method: 'PUT',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(val)
+      });
+    }catch(e){ console.error('Firebase write failed:', e); }
+  }
+};
+
+let DB = { visitors: [], employees: [] };
+let currentUser = null; // {role, name, email}
+let currentTab = 'dashboard';
+let stream = null;
+let capturedPhoto = null;
+let pendingVisitorId = null;
+
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2600);
+}
+function uid(){ return 'v' + Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+function fmtTime(ts){ if(!ts) return '—'; return new Date(ts).toLocaleString('en-IN',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}); }
+function isToday(ts){ const d=new Date(ts), n=new Date(); return d.toDateString()===n.toDateString(); }
+
+async function loadDB(){
+  DB.visitors = await loadVisitorsObj();
+  DB.employees = await S.getAll('employees', []);
+  if(DB.employees.length===0){
+    DB.employees = [
+      {id:'e1',name:'Rohit Sharma',email:'rohit@ambak.com',dept:'Sales'},
+      {id:'e2',name:'Priya Verma',email:'priya@ambak.com',dept:'HR'},
+      {id:'e3',name:'Aman Gupta',email:'aman@ambak.com',dept:'Operations'}
+    ];
+    await S.set('employees', DB.employees);
+  }
+}
+async function saveVisitors(){ await S.set('visitors', DB.visitors); }
+
+/* Per-visitor helpers — avoid whole-array overwrite races between kiosk & admin */
+async function loadVisitorsObj(){
+  const obj = await S.getAll('visitors', {});
+  return Object.values(obj || {});
+}
+async function putVisitor(v){
+  try{
+    await fetch(`${FIREBASE_URL}/visitors/${v.id}.json`, {
+      method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(v)
+    });
+  }catch(e){ console.error('Firebase visitor write failed:', e); }
+}
+async function patchVisitor(id, partial){
+  try{
+    await fetch(`${FIREBASE_URL}/visitors/${id}.json`, {
+      method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify(partial)
+    });
+  }catch(e){ console.error('Firebase visitor patch failed:', e); }
+}
+async function saveEmployees(){ await S.set('employees', DB.employees); }
+
+/* ==================== LOGIN ==================== */
+let selectedRole = 'admin';
+document.getElementById('role-tabs').addEventListener('click', e=>{
+  const t = e.target.closest('.role-tab'); if(!t) return;
+  document.querySelectorAll('.role-tab').forEach(x=>x.classList.remove('active'));
+  t.classList.add('active');
+  selectedRole = t.dataset.role;
+  document.getElementById('login-emp-field').style.display = selectedRole==='employee' ? 'flex' : 'none';
+  document.getElementById('login-user').closest('.field').style.display = selectedRole==='employee' ? 'none':'flex';
+});
+
+async function fillEmployeeDropdowns(){
+  const sel = document.getElementById('login-emp-select');
+  sel.innerHTML = DB.employees.map(e=>`<option value="${e.id}">${e.name} — ${e.dept}</option>`).join('');
+  const kh = document.getElementById('k-host');
+  kh.innerHTML = DB.employees.map(e=>`<option value="${e.id}">${e.name} — ${e.dept}</option>`).join('');
+}
+
+async function doLogin(){
+  const pass = document.getElementById('login-pass').value;
+  if(selectedRole==='admin'){
+    if(document.getElementById('login-user').value.trim().toLowerCase()!=='admin' || pass!=='admin123'){ toast('Invalid admin credentials'); return; }
+    currentUser = {role:'admin', name:'Administrator'};
+  } else if(selectedRole==='reception'){
+    if(document.getElementById('login-user').value.trim().toLowerCase()!=='reception' || pass!=='reception123'){ toast('Invalid reception credentials'); return; }
+    currentUser = {role:'reception', name:'Reception Desk'};
+  } else {
+    const empId = document.getElementById('login-emp-select').value;
+    const emp = DB.employees.find(e=>e.id===empId);
+    if(!emp || pass!=='emp123'){ toast('Invalid employee credentials'); return; }
+    currentUser = {role:'employee', name:emp.name, email:emp.email, id:emp.id};
+  }
+  document.getElementById('view-login').classList.add('hidden');
+  document.getElementById('view-app').classList.remove('hidden');
+  document.getElementById('topbar-role').textContent = currentUser.name + ' · ' + currentUser.role.toUpperCase();
+  renderSidebar();
+  navigate(currentUser.role==='employee' ? 'myvisitors' : 'dashboard');
+}
+function logout(){
+  currentUser = null;
+  document.getElementById('view-app').classList.add('hidden');
+  document.getElementById('view-login').classList.remove('hidden');
+}
+
+/* ==================== SIDEBAR / NAV ==================== */
+const NAV = {
+  admin: [
+    ['dashboard','📊','Live Dashboard'],
+    ['visitors','🧾','All Visitors'],
+    ['walkin','➕','Walk-in Entry'],
+    ['checkout','🚪','Check-out (QR/Code)'],
+    ['entryqr','🔗','Entrance QR'],
+    ['employees','👥','Employees'],
+    ['reports','📈','Reports']
+  ],
+  reception: [
+    ['dashboard','📊','Live Dashboard'],
+    ['walkin','➕','Walk-in Entry'],
+    ['checkout','🚪','Check-out (QR/Code)'],
+    ['entryqr','🔗','Entrance QR'],
+    ['visitors','🧾','All Visitors']
+  ],
+  employee: [
+    ['myvisitors','🧑‍💼','My Visitors']
+  ]
+};
+function renderSidebar(){
+  const items = NAV[currentUser.role];
+  document.getElementById('sidebar').innerHTML = items.map(([key,icon,label])=>
+    `<div class="side-item" data-key="${key}" onclick="navigate('${key}')"><span>${icon}</span><span>${label}</span></div>`
+  ).join('');
+}
+function navigate(key){
+  currentTab = key;
+  document.querySelectorAll('.side-item').forEach(x=>x.classList.toggle('active', x.dataset.key===key));
+  render();
+}
+
+/* ==================== RENDER ROUTER ==================== */
+function render(){
+  const m = document.getElementById('main-content');
+  if(currentTab==='dashboard') m.innerHTML = renderDashboard();
+  else if(currentTab==='visitors'){ m.innerHTML = renderAllVisitors(); filterVisitorTable(); }
+  else if(currentTab==='walkin') m.innerHTML = renderWalkin();
+  else if(currentTab==='checkout') m.innerHTML = renderCheckout();
+  else if(currentTab==='entryqr'){ m.innerHTML = renderEntryQR(); initEntryQR(); }
+  else if(currentTab==='employees') m.innerHTML = renderEmployees();
+  else if(currentTab==='reports') m.innerHTML = renderReports();
+  else if(currentTab==='myvisitors') m.innerHTML = renderMyVisitors();
+}
+
+/* ---------- DASHBOARD ---------- */
+function renderDashboard(){
+  const today = DB.visitors.filter(v=>isToday(v.checkinTime));
+  const inNow = DB.visitors.filter(v=>v.status==='in');
+  const doneToday = today.filter(v=>v.status==='out');
+  let avgMin = 0;
+  if(doneToday.length){
+    avgMin = Math.round(doneToday.reduce((s,v)=>s+(v.checkoutTime-v.checkinTime),0)/doneToday.length/60000);
+  }
+  const recent = [...DB.visitors].sort((a,b)=>b.checkinTime-a.checkinTime).slice(0,8);
+  return `
+    <div class="section-title">Live Dashboard</div>
+    <div class="section-sub">Real-time visitor activity across AMBAK office</div>
+    <div class="stat-grid">
+      <div class="stat-card"><div class="stat-num">${today.length}</div><div class="stat-label">Visitors Today</div></div>
+      <div class="stat-card"><div class="stat-num">${inNow.length}</div><div class="stat-label">Currently In Building</div></div>
+      <div class="stat-card"><div class="stat-num">${doneToday.length}</div><div class="stat-label">Checked Out Today</div></div>
+      <div class="stat-card"><div class="stat-num">${avgMin}m</div><div class="stat-label">Avg. Visit Duration</div></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3><span class="live-dot"></span>Live Feed</h3></div>
+      <table>
+        <thead><tr><th>Visitor</th><th>Meeting</th><th>Mobile</th><th>From</th><th>Check-in</th><th>Status</th></tr></thead>
+        <tbody>
+        ${recent.map(v=>`<tr>
+          <td style="display:flex;align-items:center;gap:8px;">${v.photo?`<img class="avatar-sm" src="${v.photo}">`:'<div class="avatar-sm"></div>'} ${v.name}</td>
+          <td>${empName(v.hostId)}</td>
+          <td>${v.mobile}</td>
+          <td>${v.location||'—'}</td>
+          <td>${fmtTime(v.checkinTime)}</td>
+          <td>${statusBadge(v)}</td>
+        </tr>`).join('') || `<tr><td colspan="6" class="small-muted" style="text-align:center;padding:24px;">No visitors yet today.</td></tr>`}
+        </tbody>
+      </table>
+    </div>`;
+}
+function empName(id){ const e=DB.employees.find(x=>x.id===id); return e?e.name:'—'; }
+function statusBadge(v){
+  if(v.status==='in') return `<span class="badge badge-in">● In Building</span>`;
+  if(v.status==='out') return `<span class="badge badge-out">Checked Out</span>`;
+  return `<span class="badge badge-pending">Pending</span>`;
+}
+
+/* ---------- ALL VISITORS ---------- */
+function renderAllVisitors(){
+  return `
+    <div class="section-title">All Visitors</div>
+    <div class="section-sub">Full visitor log with search & filters</div>
+    <div class="search-row">
+      <input id="visitor-search" placeholder="Search by name, mobile, or host..." oninput="filterVisitorTable()">
+      <select id="visitor-filter" onchange="filterVisitorTable()">
+        <option value="all">All Status</option>
+        <option value="in">Currently In</option>
+        <option value="out">Checked Out</option>
+      </select>
+    </div>
+    <div class="card"><div id="visitor-table-wrap"></div></div>
+  `;
+}
+function filterVisitorTable(){
+  const q = (document.getElementById('visitor-search')?.value||'').toLowerCase();
+  const f = document.getElementById('visitor-filter')?.value||'all';
+  let list = [...DB.visitors].sort((a,b)=>b.checkinTime-a.checkinTime);
+  if(f!=='all') list = list.filter(v=>v.status===f);
+  if(q) list = list.filter(v=> (v.name+v.mobile+empName(v.hostId)).toLowerCase().includes(q));
+  document.getElementById('visitor-table-wrap').innerHTML = `
+    <table><thead><tr><th>Visitor</th><th>Mobile</th><th>From</th><th>Purpose</th><th>Meeting</th><th>In</th><th>Out</th><th>Status</th></tr></thead>
+    <tbody>${list.map(v=>`<tr>
+      <td>${v.name}</td><td>${v.mobile}</td><td>${v.location||'—'}</td><td>${v.purpose||'—'}</td>
+      <td>${empName(v.hostId)}</td><td>${fmtTime(v.checkinTime)}</td><td>${fmtTime(v.checkoutTime)}</td>
+      <td>${statusBadge(v)}</td>
+    </tr>`).join('') || `<tr><td colspan="8" class="small-muted" style="text-align:center;padding:24px;">No records found.</td></tr>`}</tbody></table>`;
+}
+
+/* ---------- WALK-IN ---------- */
+function renderWalkin(){
+  return `
+    <div class="section-title">Walk-in Visitor Entry</div>
+    <div class="section-sub">Register a visitor manually from the reception desk</div>
+    <div class="card" style="max-width:640px;">
+      <div class="form-grid">
+        <div class="field"><label>Full Name *</label><input id="w-name"></div>
+        <div class="field"><label>Mobile Number *</label><input id="w-mobile" maxlength="10"></div>
+        <div class="field"><label>Coming From (Location) *</label><input id="w-location"></div>
+        <div class="field"><label>Whom to Meet *</label><select id="w-host">${DB.employees.map(e=>`<option value="${e.id}">${e.name} — ${e.dept}</option>`).join('')}</select></div>
+        <div class="field" style="grid-column:1/-1;"><label>Purpose of Visit</label><input id="w-purpose"></div>
+      </div>
+      <button class="btn btn-amber" onclick="submitWalkin()">Check In Visitor</button>
+    </div>`;
+}
+async function submitWalkin(){
+  const name=document.getElementById('w-name').value.trim();
+  const mobile=document.getElementById('w-mobile').value.trim();
+  const location=document.getElementById('w-location').value.trim();
+  const hostId=document.getElementById('w-host').value;
+  const purpose=document.getElementById('w-purpose').value.trim();
+  if(!name||!mobile||!location){ toast('Please fill all required fields'); return; }
+  const v = {id:uid(),name,mobile,location,hostId,purpose,photo:null,checkinTime:Date.now(),checkoutTime:null,status:'in',source:'walkin'};
+  DB.visitors.push(v); await putVisitor(v);
+  toast(`${name} checked in successfully · Host notified`);
+  render();
+}
+
+/* ---------- CHECK-OUT ---------- */
+function renderCheckout(){
+  return `
+    <div class="section-title">Visitor Check-out</div>
+    <div class="section-sub">Scan visitor QR code or search manually to check out</div>
+    <div class="card" style="max-width:640px;">
+      <div class="card-head"><h3>📷 Scan QR</h3></div>
+      <div class="cam-box" id="scan-cam-box" style="max-width:400px;">
+        <video id="scan-video" autoplay playsinline></video>
+        <canvas id="scan-canvas" class="hidden"></canvas>
+      </div>
+      <button class="btn btn-outline" onclick="startScanner()">Start Camera Scanner</button>
+      <div id="scan-result" class="small-muted" style="margin-top:10px;"></div>
+    </div>
+    <div class="card" style="max-width:640px;">
+      <div class="card-head"><h3>Or search manually</h3></div>
+      <div style="display:flex;gap:10px;">
+        <input id="co-search" placeholder="Name or mobile number" style="flex:1;padding:10px 12px;border:1px solid var(--line);border-radius:7px;">
+        <button class="btn btn-primary" onclick="manualCheckoutSearch()">Search</button>
+      </div>
+      <div id="co-results" style="margin-top:14px;"></div>
+    </div>`;
+}
+function manualCheckoutSearch(){
+  const q = document.getElementById('co-search').value.toLowerCase().trim();
+  const matches = DB.visitors.filter(v=>v.status==='in' && (v.name.toLowerCase().includes(q)||v.mobile.includes(q)));
+  document.getElementById('co-results').innerHTML = matches.map(v=>`
+    <div class="flex-between" style="padding:10px 0;border-bottom:1px solid var(--line);">
+      <div>${v.name} · ${v.mobile} · meeting ${empName(v.hostId)}</div>
+      <button class="btn btn-sm btn-danger" onclick="checkoutVisitor('${v.id}')">Check Out</button>
+    </div>`).join('') || `<div class="small-muted">No matching active visitor.</div>`;
+}
+async function checkoutVisitor(id){
+  const v = DB.visitors.find(x=>x.id===id);
+  if(!v || v.status!=='in'){ toast('Visitor not found or already checked out'); return; }
+  v.status='out'; v.checkoutTime=Date.now();
+  await patchVisitor(v.id, {status:'out', checkoutTime:v.checkoutTime});
+  toast(`${v.name} checked out`);
+  render();
+}
+let scanning=false;
+async function startScanner(){
+  const video = document.getElementById('scan-video');
+  const canvas = document.getElementById('scan-canvas');
+  const resultBox = document.getElementById('scan-result');
+  try{
+    const s = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
+    video.srcObject = s; scanning = true;
+    resultBox.textContent = 'Scanning... point camera at visitor QR code';
+    const ctx = canvas.getContext('2d');
+    function tick(){
+      if(!scanning) return;
+      if(video.readyState===video.HAVE_ENOUGH_DATA){
+        canvas.width=video.videoWidth; canvas.height=video.videoHeight;
+        ctx.drawImage(video,0,0,canvas.width,canvas.height);
+        const img = ctx.getImageData(0,0,canvas.width,canvas.height);
+        const code = jsQR(img.data, img.width, img.height);
+        if(code){
+          scanning=false;
+          s.getTracks().forEach(t=>t.stop());
+          handleScannedCode(code.data);
+          return;
+        }
+      }
+      requestAnimationFrame(tick);
+    }
+    tick();
+  }catch(e){
+    resultBox.textContent = 'Camera not available on this device/browser.';
+  }
+}
+async function handleScannedCode(data){
+  const v = DB.visitors.find(x=>x.id===data);
+  const resultBox = document.getElementById('scan-result');
+  if(!v){ resultBox.textContent='QR not recognized.'; return; }
+  if(v.status!=='in'){ resultBox.textContent=`${v.name} is already checked out.`; return; }
+  await checkoutVisitor(v.id);
+  resultBox.textContent = `✅ ${v.name} checked out via QR scan.`;
+}
+
+/* ---------- ENTRANCE QR ---------- */
+function renderEntryQR(){
+  return `
+    <div class="section-title">Entrance QR Code</div>
+    <div class="section-sub">Generate a QR visitors scan on their own phone to open the self check-in form</div>
+    <div class="note-box">📎 First deploy the kiosk page (ambak_kiosk_checkin.html) to GitHub Pages, then paste that live URL below. Example: <b>https://yourusername.github.io/ambak-vms/</b></div>
+    <div class="card" style="max-width:520px;">
+      <div class="field"><label>Live Kiosk URL</label>
+        <input id="entry-url-input" placeholder="https://yourusername.github.io/ambak-vms/"></div>
+      <button class="btn btn-amber" onclick="generateEntryQR()">Generate QR</button>
+      <div id="entry-qr-box" style="text-align:center;margin-top:20px;"></div>
+    </div>`;
+}
+async function initEntryQR(){
+  const saved = await S.getAll('kioskUrl', '');
+  if(saved) document.getElementById('entry-url-input').value = saved;
+  if(saved) generateEntryQR();
+}
+async function generateEntryQR(){
+  const url = document.getElementById('entry-url-input').value.trim();
+  if(!url){ toast('Paste your live kiosk URL first'); return; }
+  await S.set('kioskUrl', url);
+  const box = document.getElementById('entry-qr-box');
+  box.innerHTML = '<div id="entry-qr-canvas" style="display:inline-block;padding:16px;background:#fff;border:1px solid var(--line);border-radius:10px;"></div><p class="small-muted" style="margin-top:12px;">Print this and place it at the entrance / reception desk.</p>';
+  new QRCode(document.getElementById('entry-qr-canvas'), {text:url, width:220, height:220, colorDark:'#0B1F3A', colorLight:'#ffffff'});
+}
+
+/* ---------- EMPLOYEES ---------- */
+function renderEmployees(){
+  return `
+    <div class="section-title">Employees</div>
+    <div class="section-sub">Manage host list — used across kiosk, walk-in, and dashboards</div>
+    <div class="note-box">📎 <b>Google Sheet sync:</b> live auto-fetch needs a backend + API key, which this environment can't hold. Instead: in your Sheet go to <b>File → Share → Publish to web → CSV</b>, then paste that CSV content below to import/update employees in one click.</div>
+    <div class="tab-strip">
+      <button class="tab-btn active" onclick="switchEmpTab('add',this)">Add Employee</button>
+      <button class="tab-btn" onclick="switchEmpTab('csv',this)">Import from Google Sheet (CSV)</button>
+    </div>
+    <div id="emp-tab-add" class="card" style="max-width:560px;">
+      <div class="form-grid">
+        <div class="field"><label>Name</label><input id="e-name"></div>
+        <div class="field"><label>Email</label><input id="e-email"></div>
+        <div class="field" style="grid-column:1/-1;"><label>Department</label><input id="e-dept"></div>
+      </div>
+      <button class="btn btn-amber" onclick="addEmployee()">Add Employee</button>
+    </div>
+    <div id="emp-tab-csv" class="card hidden" style="max-width:560px;">
+      <div class="field"><label>Paste CSV (columns: name,email,dept)</label>
+        <textarea id="csv-input" rows="6" placeholder="Rohit Sharma,rohit@ambak.com,Sales
+Priya Verma,priya@ambak.com,HR"></textarea>
+      </div>
+      <button class="btn btn-amber" onclick="importCSV()">Import</button>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>Employee List (${DB.employees.length})</h3></div>
+      <table><thead><tr><th>Name</th><th>Email</th><th>Department</th><th></th></tr></thead>
+      <tbody>${DB.employees.map(e=>`<tr><td>${e.name}</td><td>${e.email||'—'}</td><td>${e.dept||'—'}</td>
+        <td><button class="btn btn-sm btn-outline" onclick="deleteEmployee('${e.id}')">Remove</button></td></tr>`).join('')}</tbody></table>
+    </div>`;
+}
+function switchEmpTab(tab, btn){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('emp-tab-add').classList.toggle('hidden', tab!=='add');
+  document.getElementById('emp-tab-csv').classList.toggle('hidden', tab!=='csv');
+}
+async function addEmployee(){
+  const name=document.getElementById('e-name').value.trim();
+  const email=document.getElementById('e-email').value.trim();
+  const dept=document.getElementById('e-dept').value.trim();
+  if(!name){ toast('Name required'); return; }
+  DB.employees.push({id:uid(),name,email,dept});
+  await saveEmployees(); toast('Employee added'); render();
+}
+async function importCSV(){
+  const raw = document.getElementById('csv-input').value.trim();
+  if(!raw){ toast('Paste CSV data first'); return; }
+  const rows = raw.split('\\n').map(r=>r.split(',').map(c=>c.trim())).filter(r=>r.length>=1 && r[0]);
+  let count=0;
+  rows.forEach(r=>{
+    const [name,email,dept] = r;
+    if(!name) return;
+    const existing = DB.employees.find(e=>e.email===email && email);
+    if(existing){ existing.name=name; existing.dept=dept||existing.dept; }
+    else { DB.employees.push({id:uid(),name,email:email||'',dept:dept||''}); }
+    count++;
+  });
+  await saveEmployees();
+  toast(`Imported ${count} employee(s) from sheet`);
+  render();
+}
+async function deleteEmployee(id){
+  DB.employees = DB.employees.filter(e=>e.id!==id);
+  await saveEmployees(); toast('Employee removed'); render();
+}
+
+/* ---------- REPORTS ---------- */
+function renderReports(){
+  const total = DB.visitors.length;
+  const byHost = {};
+  DB.visitors.forEach(v=>{ const n=empName(v.hostId); byHost[n]=(byHost[n]||0)+1; });
+  const rows = Object.entries(byHost).sort((a,b)=>b[1]-a[1]);
+  return `
+    <div class="section-title">Reports</div>
+    <div class="section-sub">Visitor traffic summary</div>
+    <div class="stat-grid">
+      <div class="stat-card"><div class="stat-num">${total}</div><div class="stat-label">Total Visitors (All Time)</div></div>
+      <div class="stat-card"><div class="stat-num">${DB.visitors.filter(v=>v.status==='in').length}</div><div class="stat-label">Currently In</div></div>
+      <div class="stat-card"><div class="stat-num">${DB.employees.length}</div><div class="stat-label">Active Hosts</div></div>
+      <div class="stat-card"><div class="stat-num">${DB.visitors.filter(v=>v.source==='kiosk').length}</div><div class="stat-label">Self Check-in (Kiosk)</div></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>Visits by Employee</h3></div>
+      <table><thead><tr><th>Employee</th><th>Visitor Count</th></tr></thead>
+      <tbody>${rows.map(([n,c])=>`<tr><td>${n}</td><td>${c}</td></tr>`).join('') || '<tr><td colspan=2 class="small-muted">No data yet</td></tr>'}</tbody></table>
+    </div>
+    <button class="btn btn-outline" onclick="exportCSV()">⬇ Export All Visitors (CSV)</button>`;
+}
+function exportCSV(){
+  const header = 'Name,Mobile,Location,Purpose,Host,CheckIn,CheckOut,Status\\n';
+  const rows = DB.visitors.map(v=>[v.name,v.mobile,v.location,v.purpose,empName(v.hostId),fmtTime(v.checkinTime),fmtTime(v.checkoutTime),v.status].join(',')).join('\\n');
+  const blob = new Blob([header+rows],{type:'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download='ambak_visitors.csv'; a.click();
+}
+
+/* ---------- EMPLOYEE PORTAL ---------- */
+function renderMyVisitors(){
+  const mine = DB.visitors.filter(v=>v.hostId===currentUser.id).sort((a,b)=>b.checkinTime-a.checkinTime);
+  return `
+    <div class="section-title">My Visitors</div>
+    <div class="section-sub">Visitors who came to meet you</div>
+    <div class="card">
+      <table><thead><tr><th>Visitor</th><th>Mobile</th><th>Purpose</th><th>Check-in</th><th>Status</th><th></th></tr></thead>
+      <tbody>${mine.map(v=>`<tr>
+        <td>${v.name}</td><td>${v.mobile}</td><td>${v.purpose||'—'}</td><td>${fmtTime(v.checkinTime)}</td>
+        <td>${statusBadge(v)}</td>
+        <td>${v.status==='in' ? `<a class="btn btn-sm btn-outline" href="mailto:?subject=Re: Visitor ${v.name}&body=Hi, I'm on my way to meet ${v.name} at reception.">✉ Notify</a>` : ''}</td>
+      </tr>`).join('') || '<tr><td colspan=6 class="small-muted" style="text-align:center;padding:24px;">No visitors yet.</td></tr>'}</tbody></table>
+    </div>`;
+}
+
+/* ==================== KIOSK LOGIC ==================== */
+function openKiosk(){
+  document.getElementById('view-login').classList.add('hidden');
+  document.getElementById('view-app').classList.add('hidden');
+  document.getElementById('view-kiosk').classList.remove('hidden');
+  resetKiosk();
+}
+function resetKiosk(){
+  ['k-name','k-mobile','k-location','k-purpose'].forEach(id=>document.getElementById(id).value='');
+  capturedPhoto=null; pendingVisitorId=null;
+  document.getElementById('kiosk-step1').classList.remove('hidden');
+  document.getElementById('kiosk-step2').classList.add('hidden');
+  document.getElementById('kiosk-step3').classList.add('hidden');
+  document.getElementById('ps1').classList.add('done');
+  document.getElementById('ps2').classList.remove('done');
+  document.getElementById('ps3').classList.remove('done');
+  if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; }
+}
+function kioskBackToStep1(){
+  document.getElementById('kiosk-step1').classList.remove('hidden');
+  document.getElementById('kiosk-step2').classList.add('hidden');
+  if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; }
+}
+async function kioskNextToPhoto(){
+  const name=document.getElementById('k-name').value.trim();
+  const mobile=document.getElementById('k-mobile').value.trim();
+  const location=document.getElementById('k-location').value.trim();
+  if(!name||!mobile||!location){ toast('Please fill all required fields'); return; }
+  if(!/^[0-9]{10}$/.test(mobile)){ toast('Enter a valid 10-digit mobile number'); return; }
+  document.getElementById('kiosk-step1').classList.add('hidden');
+  document.getElementById('kiosk-step2').classList.remove('hidden');
+  document.getElementById('ps2').classList.add('done');
+  try{
+    stream = await navigator.mediaDevices.getUserMedia({video:true});
+    document.getElementById('cam-video').srcObject = stream;
+  }catch(e){
+    toast('Camera unavailable — continuing without photo');
+    setTimeout(()=>finishKioskCheckin(null), 800);
+  }
+}
+function capturePhoto(){
+  const video = document.getElementById('cam-video');
+  const canvas = document.getElementById('cam-canvas');
+  canvas.width = video.videoWidth || 480; canvas.height = video.videoHeight || 360;
+  canvas.getContext('2d').drawImage(video,0,0,canvas.width,canvas.height);
+  const dataUrl = canvas.toDataURL('image/jpeg',0.6);
+  if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; }
+  finishKioskCheckin(dataUrl);
+}
+async function finishKioskCheckin(photo){
+  const v = {
+    id: uid(),
+    name: document.getElementById('k-name').value.trim(),
+    mobile: document.getElementById('k-mobile').value.trim(),
+    location: document.getElementById('k-location').value.trim(),
+    hostId: document.getElementById('k-host').value,
+    purpose: document.getElementById('k-purpose').value.trim(),
+    photo: photo,
+    checkinTime: Date.now(),
+    checkoutTime: null,
+    status:'in',
+    source:'kiosk'
+  };
+  DB.visitors.push(v);
+  await putVisitor(v);
+  document.getElementById('kiosk-step3').classList.remove('hidden');
+  document.getElementById('ps3').classList.add('done');
+  document.getElementById('qr-welcome-text').textContent = `${v.name}, meeting ${empName(v.hostId)}`;
+  const box = document.getElementById('qrcode-canvas');
+  box.innerHTML='';
+  new QRCode(box, {text:v.id, width:170, height:170, colorDark:'#0B1F3A', colorLight:'#ffffff'});
+  toast(`Host ${empName(v.hostId)} notified via email`);
+}
+
+/* ==================== POLLING (live sync) ==================== */
+setInterval(async ()=>{
+  if(document.getElementById('view-app').classList.contains('hidden')) return;
+  const fresh = await loadVisitorsObj();
+  if(JSON.stringify(fresh)!==JSON.stringify(DB.visitors)){
+    DB.visitors = fresh;
+    render();
+  }
+}, 4000);
+
+/* clock */
+setInterval(()=>{
+  const el = document.getElementById('topbar-clock');
+  if(el) el.textContent = new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+}, 1000);
+
+/* ==================== INIT ==================== */
+(async function init(){
+  await loadDB();
+  await fillEmployeeDropdowns();
+})();
+</script>
+</body>
+</html>
