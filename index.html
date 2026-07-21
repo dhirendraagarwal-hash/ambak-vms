@@ -92,11 +92,11 @@ body{margin:0;font-family:var(--font-body);background:linear-gradient(180deg,var
 
     <!-- FORM + PHOTO ON ONE SCREEN -->
     <div id="step-form">
-      <div class="field"><label>Full Name <span class="req">*</span></label>
-        <input id="k-name" placeholder="Your full name"></div>
       <div class="field"><label>Mobile Number <span class="req">*</span></label>
         <input id="k-mobile" placeholder="10-digit mobile number" maxlength="10" inputmode="numeric">
         <span class="small-muted" id="mobile-hint" style="color:var(--green);"></span></div>
+      <div class="field"><label>Full Name <span class="req">*</span></label>
+        <input id="k-name" placeholder="Your full name"></div>
       <div class="field"><label>Company <span class="req">*</span></label>
         <input id="k-company" placeholder="Your company name"></div>
       <div class="field"><label>Coming From (City / Location) <span class="req">*</span></label>
@@ -631,8 +631,9 @@ async function pollForApproval(visitorId, name, hostName, groupSizeAtSubmit){
         clearInterval(approvalPollTimer);
         document.getElementById('step-pending').classList.add('hidden');
         document.getElementById('step-rejected').classList.remove('hidden');
-        const reasonText = v.rejectReason ? ` Reason: ${v.rejectReason}` : '';
-        document.getElementById('rejected-text').textContent = `${hostName} was unable to approve this visit right now.${reasonText} Please speak with reception.`;
+        document.getElementById('rejected-text').innerHTML = `${hostName} was unable to approve this visit right now.`
+          + (v.rejectReason ? `<div style="margin-top:12px;padding:10px 16px;background:#FEF1DE;border-left:3px solid var(--amber);border-radius:6px;color:var(--amber-deep);font-weight:700;font-size:13.5px;text-align:left;">Reason: ${v.rejectReason}</div>` : '')
+          + `<div style="margin-top:10px;">Please speak with reception.</div>`;
       } else if(approvalPollCount >= 90){ /* ~4.5 minutes at 3s interval */
         document.getElementById('pending-text').textContent = `Still waiting — this is taking longer than usual. Please check with reception if you'd like.`;
       }
