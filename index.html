@@ -237,7 +237,7 @@ if(emailConfigured && window.emailjs){ emailjs.init({publicKey: EMAILJS_PUBLIC_K
    When this is set, it REPLACES the EmailJS email below (to avoid
    sending two emails) — EmailJS stays as a fallback until then.
    ============================================================ */
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwTcgp8zCYtnIM9HNEQv8FoNTFVbiHbYKcxllDAyjaaJ0BWBt2S8ncEzJObYSGIXnLT/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyzGQnSYrGu7McyLtXZ9LVJNLb-JbjaDxMI-Pi6LjWAk4IOuPCRdPpHkWWCbgPJilCnrQ/exec';
 const driveConfigured = !APPS_SCRIPT_URL.startsWith('YOUR_');
 
 async function sendToDrive(visitor, hostEmp){
