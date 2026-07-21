@@ -187,8 +187,8 @@ tr:hover td{background:#FAFBFC;}
       <input id="login-pass" type="password" placeholder="••••••••">
     </div>
     <button class="btn btn-primary" style="width:100%;" onclick="doLogin()">Sign in</button>
-    <div class="hint">Demo credentials — Admin: admin/admin123 · Reception: reception/reception123 · Employee: pick name, password emp123</div>
-    <a class="kiosk-link" href="#" onclick="openKiosk();return false;">🖥️ Open Self Check-in Kiosk (no login) →</a>
+    <div class="hint"></div>
+    <a class="kiosk-link" href="https://dhirendraagarwal-hash.github.io/ambak-vms/" target="_blank" rel="noopener">🖥️ Open Self Check-in Kiosk (no login) →</a>
   </div>
 </div>
 
@@ -252,7 +252,7 @@ tr:hover td{background:#FAFBFC;}
     <div class="topbar-right">
       <span class="pill" id="topbar-role"></span>
       <span id="topbar-clock"></span>
-      <button class="btn-ghost-topbar" onclick="openKiosk()">Kiosk Mode</button>
+      <button class="btn-ghost-topbar" onclick="window.open('https://dhirendraagarwal-hash.github.io/ambak-vms/','_blank')">Kiosk Mode</button>
       <button class="btn-ghost-topbar" onclick="logout()">Logout</button>
     </div>
   </div>
@@ -383,15 +383,15 @@ async function fillEmployeeDropdowns(){
 async function doLogin(){
   const pass = document.getElementById('login-pass').value.trim();
   if(selectedRole==='admin'){
-    if(document.getElementById('login-user').value.trim().toLowerCase()!=='admin' || pass!=='admin123'){ toast('Invalid admin credentials'); return; }
+    if(document.getElementById('login-user').value.trim().toLowerCase()!=='admin' || pass!=='Ambak@Admin2026!'){ toast('Invalid admin credentials'); return; }
     currentUser = {role:'admin', name:'Administrator'};
   } else if(selectedRole==='reception'){
-    if(document.getElementById('login-user').value.trim().toLowerCase()!=='reception' || pass!=='reception123'){ toast('Invalid reception credentials'); return; }
+    if(document.getElementById('login-user').value.trim().toLowerCase()!=='reception' || pass!=='Ambak@Recep2026!'){ toast('Invalid reception credentials'); return; }
     currentUser = {role:'reception', name:'Reception Desk'};
   } else {
     const empId = document.getElementById('login-emp-select').value;
     const emp = DB.employees.find(e=>e.id===empId);
-    if(!emp || pass!=='emp123'){ toast('Invalid employee credentials'); return; }
+    if(!emp || pass!=='Ambak@Emp2026!'){ toast('Invalid employee credentials'); return; }
     currentUser = {role:'employee', name:emp.name, email:emp.email, id:emp.id};
   }
   document.getElementById('view-login').classList.add('hidden');
