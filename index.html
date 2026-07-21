@@ -95,7 +95,8 @@ body{margin:0;font-family:var(--font-body);background:linear-gradient(180deg,var
       <div class="field"><label>Full Name <span class="req">*</span></label>
         <input id="k-name" placeholder="Your full name"></div>
       <div class="field"><label>Mobile Number <span class="req">*</span></label>
-        <input id="k-mobile" placeholder="10-digit mobile number" maxlength="10" inputmode="numeric"></div>
+        <input id="k-mobile" placeholder="10-digit mobile number" maxlength="10" inputmode="numeric">
+        <span class="small-muted" id="mobile-hint" style="color:var(--green);"></span></div>
       <div class="field"><label>Company <span class="req">*</span></label>
         <input id="k-company" placeholder="Your company name"></div>
       <div class="field"><label>Coming From (City / Location) <span class="req">*</span></label>
@@ -394,6 +395,51 @@ document.addEventListener('click', (e)=>{
   if(wrap && !wrap.contains(e.target) && e.target !== input){ wrap.classList.add('hidden'); }
 });
 loadEmployees();
+
+document.getElementById('k-mobile').addEventListener('input', function(){
+  document.getElementById('mobile-hint').textContent = '';
+  if(this.value.length === 10){ lookupReturningVisitor(this.value); }
+});
+
+async function lookupReturningVisitor(mobile){
+  try{
+    const res = await fetch(`${FIREBASE_URL}/visitors.json?orderBy="mobile"&equalTo="${mobile}"`);
+    const data = await res.json();
+    if(!data) return;
+    const records = Object.values(data).sort((a,b)=>(b.checkinTime||0)-(a.checkinTime||0));
+    const latest = records[0];
+    if(!latest) return;
+
+    if(latest.name) document.getElementById('k-name').value = latest.name;
+    if(latest.company) document.getElementById('k-company').value = latest.company;
+    if(latest.location) document.getElementById('k-location').value = latest.location;
+    if(latest.idPhoto) applyStoredPhoto('id', latest.idPhoto);
+    if(latest.photo) applyStoredPhoto('self', latest.photo);
+
+    document.getElementById('mobile-hint').textContent = `✓ Welcome back, ${latest.name}! We've filled in your earlier details and photos — tap Retake if you'd like new ones.`;
+  }catch(e){ console.error('Returning visitor lookup failed:', e); }
+}
+
+function applyStoredPhoto(target, dataUrl){
+  capturedPhotos[target] = dataUrl;
+  document.getElementById(`${target}-photo`).src = dataUrl;
+  document.getElementById(`${target}-photo`).classList.remove('hidden');
+  document.getElementById(`${target}-placeholder`).classList.add('hidden');
+  document.getElementById(`${target}-video`).classList.add('hidden');
+  document.getElementById(`${target}-badge`).classList.add('hidden');
+  document.getElementById(`btn-enable-${target}`).classList.add('hidden');
+  document.getElementById(`btn-capture-${target}`).classList.add('hidden');
+  document.getElementById(`btn-retake-${target}`).classList.remove('hidden');
+  const status = document.getElementById(`${target}-status`);
+  status.textContent = '✓ Using photo from your last visit — tap Retake for a new one';
+  status.classList.add('ok');
+  if(target === 'id'){
+    document.getElementById('id-guide-frame').classList.add('hidden');
+    document.getElementById('id-confirm-wrap').classList.remove('hidden');
+    document.getElementById('id-confirm-check').checked = false;
+  }
+}
+
 if(CURRENT_OFFICE){ document.getElementById('office-badge').textContent = '📍 ' + CURRENT_OFFICE + ' Branch'; }
 if(URL_CODE){
   const codeField = document.getElementById('k-checkincode');
