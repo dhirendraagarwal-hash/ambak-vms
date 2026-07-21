@@ -403,12 +403,14 @@ document.getElementById('k-mobile').addEventListener('input', function(){
 
 async function lookupReturningVisitor(mobile){
   try{
-    const res = await fetch(`${FIREBASE_URL}/visitors.json?orderBy="mobile"&equalTo="${mobile}"`);
+    const res = await fetch(`${FIREBASE_URL}/visitors.json`);
     const data = await res.json();
-    if(!data) return;
-    const records = Object.values(data).sort((a,b)=>(b.checkinTime||0)-(a.checkinTime||0));
+    if(!data || typeof data !== 'object') return;
+
+    const records = Object.values(data).filter(v => v && v.mobile === mobile);
+    if(records.length === 0) return;
+    records.sort((a,b)=>(b.checkinTime||0)-(a.checkinTime||0));
     const latest = records[0];
-    if(!latest) return;
 
     if(latest.name) document.getElementById('k-name').value = latest.name;
     if(latest.company) document.getElementById('k-company').value = latest.company;
