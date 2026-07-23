@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AMBAK · Self Check-in</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#111827; --navy-light:#1F2937; --paper:#F5F6F8; --line:#E2E5EB;
+  --amber:#5D5FEF; --amber-deep:#4A4CD6; --green:#1F8A57; --muted:#6B7280;
+  --font-display:'Poppins',sans-serif;
+  --font-body:'Poppins',-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box;}
+body{
+  margin:0;font-family:var(--font-body);
+  background:linear-gradient(180deg,var(--navy) 0%,#173764 100%);
+  min-height:100vh;color:var(--navy);
+  display:flex;align-items:center;justify-content:center;
+  position:relative;overflow-x:hidden;
+}
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cpolygon points='60,20 90,80 30,80' fill='none' stroke='%235D5FEF' stroke-width='1' opacity='0.08'/%3E%3C/svg%3E");
+  background-size:120px 120px;
+}
+.hidden{display:none !important;}
+.wrap{max-width:560px;width:100%;margin:0 auto;padding:30px 16px;position:relative;z-index:1;}
+.card{background:#fff;border-radius:18px;padding:28px 24px;box-shadow:0 30px 70px rgba(0,0,0,0.35);}
+.head{text-align:center;margin-bottom:22px;}
+.mark{width:56px;height:56px;border-radius:12px;background:var(--amber);display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-display);font-weight:bold;font-size:26px;color:var(--navy);margin:0 auto 10px;}
+.title{font-family:var(--font-display);font-size:22px;}
+.sub{font-size:13px;color:var(--muted);}
+.progress{display:flex;gap:6px;margin:22px 0 24px;}
+.progress div{flex:1;height:4px;border-radius:3px;background:var(--line);}
+.progress div.done{background:var(--amber);}
+
+.field{display:flex;flex-direction:column;gap:5px;margin-bottom:12px;}
+.field label{font-size:12.5px;font-weight:600;}
+.field label .req{color:var(--amber-deep);}
+.field input,.field select{padding:9px 12px;border:1px solid var(--line);border-radius:8px;font-size:14px;background:#fff;}
+.host-suggestions{
+  position:absolute;top:100%;left:0;right:0;z-index:20;background:#fff;
+  border:1px solid var(--line);border-radius:8px;margin-top:4px;max-height:220px;overflow-y:auto;
+  box-shadow:0 8px 20px rgba(0,0,0,0.12);
+}
+.host-suggestions .opt{padding:10px 13px;font-size:14px;cursor:pointer;border-bottom:1px solid #F1F3F6;}
+.host-suggestions .opt:last-child{border-bottom:none;}
+.host-suggestions .opt:hover, .host-suggestions .opt.active{background:#FEF1DE;}
+.host-suggestions .opt .dept{color:var(--muted);font-size:12px;}
+.host-suggestions .empty{padding:12px 13px;font-size:13px;color:var(--muted);}
+.field input:focus,.field select:focus{outline:none;border-color:var(--amber);}
+
+/* photo section */
+.photo-block{margin-bottom:18px;}
+.photo-block label{font-size:13px;font-weight:600;display:block;margin-bottom:8px;}
+.cam-shell{
+  width:100%;aspect-ratio:4/3;background:#0e1626;border-radius:12px;overflow:hidden;position:relative;
+  border:1px solid var(--line);
+}
+.cam-shell-circle{
+  width:220px;aspect-ratio:1/1;border-radius:50%;margin:0 auto;
+  box-shadow:0 0 0 4px #fff, 0 0 0 7px var(--amber);
+}
+.cam-shell video, .cam-shell canvas, .cam-shell img{width:100%;height:100%;object-fit:cover;display:block;}
+.cam-placeholder{
+  position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  color:#9AA6BE;font-size:13px;gap:8px;
+}
+.cam-badge{
+  position:absolute;top:10px;left:10px;background:rgba(0,0,0,0.55);color:#fff;font-size:11px;
+  padding:4px 9px;border-radius:20px;display:flex;align-items:center;gap:5px;
+}
+.cam-badge .dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 1.4s infinite;}
+@keyframes pulse{0%{opacity:1;}50%{opacity:.3;}100%{opacity:1;}}
+.photo-actions{display:flex;gap:10px;margin-top:10px;}
+.btn{padding:11px 18px;border-radius:8px;border:none;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;}
+.btn-amber{background:var(--amber);color:var(--navy);}
+.btn-amber:hover{background:var(--amber-deep);color:#fff;}
+.btn-outline{background:#fff;border:1px solid var(--line);color:var(--navy);}
+.btn-outline:hover{border-color:var(--navy);}
+.btn-primary{background:var(--navy);color:#fff;}
+.btn-primary:disabled{background:#B9C3D6;cursor:not-allowed;}
+.btn-full{width:100%;}
+.photo-status{font-size:12px;color:var(--muted);margin-top:8px;text-align:center;}
+.photo-status.ok{color:var(--green);font-weight:600;}
+
+.qr-result{text-align:center;padding:6px 0;}
+.tab-strip{display:flex;gap:4px;border-bottom:1px solid var(--line);}
+.tab-btn{padding:9px 14px;font-size:13px;font-weight:600;color:var(--muted);border-bottom:2px solid transparent;background:none;border-top:none;border-left:none;border-right:none;cursor:pointer;font-family:inherit;}
+.tab-btn.active{color:var(--navy);border-bottom-color:var(--amber);}
+.spinner-ring{font-size:56px;display:inline-block;animation:spin 1.6s linear infinite;}
+@keyframes spin{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
+#qrcode-canvas{display:inline-block;padding:14px;background:#fff;border:1px solid var(--line);border-radius:10px;margin:14px 0;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <div class="head">
+      <img src="https://dhirendraagarwal-hash.github.io/ambak-vms/ambak-logo.png" alt="AMBAK" style="height:34px;margin:0 auto 8px;display:block;">
+      <div class="title">Welcome to AMBAK</div>
+      <div class="sub" id="office-badge" style="font-weight:700;color:var(--amber-deep);margin-top:2px;"></div>
+      <div id="code-auto-pill" class="hidden" style="margin-top:10px;display:inline-flex;align-items:center;gap:6px;background:#EEF0FF;border:1px solid #D6D9FF;border-radius:20px;padding:5px 14px;font-family:var(--font-display);font-weight:700;font-size:13px;color:#3730A3;">
+        🔑 <span id="code-auto-value"></span> · verified
+      </div>
+      <div id="code-manual-wrap" style="margin-top:10px;">
+        <input id="k-checkincode" placeholder="4-digit code" maxlength="4" inputmode="numeric" autocomplete="off" style="max-width:130px;margin:0 auto;text-align:center;font-weight:700;letter-spacing:3px;font-size:15px;padding:8px;">
+      </div>
+    </div>
+    <div class="progress"><div id="p1" class="done"></div><div id="p2"></div><div id="p3"></div></div>
+
+    <!-- STEP 1: DETAILS -->
+    <div id="step-form">
+      <div class="field"><label>Mobile Number <span class="req">*</span></label>
+        <input id="k-mobile" placeholder="10-digit mobile number" maxlength="10" inputmode="numeric" autocomplete="off">
+        <span class="small-muted" id="mobile-hint" style="color:var(--green);"></span></div>
+      <div id="resume-banner" class="hidden" style="background:#EEF0FF;border:1px solid #D6D9FF;border-radius:10px;padding:14px 16px;margin:-6px 0 16px;">
+        <div style="font-size:13px;color:#3730A3;font-weight:600;margin-bottom:8px;" id="resume-text"></div>
+        <button type="button" class="btn btn-amber btn-full" onclick="resumeCheckin()">Resume my check-in →</button>
+      </div>
+      <div class="field">
+        <div style="display:flex;gap:10px;align-items:flex-end;">
+          <div style="flex:1;"><label>Full Name <span class="req">*</span></label>
+            <input id="k-name" placeholder="Your full name" autocomplete="off"></div>
+          <div style="flex-shrink:0;text-align:center;">
+            <label style="display:block;font-size:10.5px;white-space:nowrap;">Group size</label>
+            <div style="display:flex;align-items:center;gap:5px;">
+              <button type="button" onclick="changeGroupSize(-1)" style="width:30px;height:30px;border-radius:6px;border:1px solid var(--line);background:#fff;font-size:15px;font-weight:bold;color:var(--navy);cursor:pointer;">−</button>
+              <span id="group-size-display" style="font-family:var(--font-display);font-size:16px;font-weight:bold;color:var(--navy);min-width:16px;text-align:center;">1</span>
+              <button type="button" onclick="changeGroupSize(1)" style="width:30px;height:30px;border-radius:6px;border:1px solid var(--line);background:#fff;font-size:15px;font-weight:bold;color:var(--navy);cursor:pointer;">+</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="field"><label>Company <span class="req">*</span></label>
+        <input id="k-company" placeholder="Your company name" autocomplete="off"></div>
+      <div class="field"><label>Coming From (City / Location) <span class="req">*</span></label>
+        <select id="k-location-select" onchange="handleLocationSelect()">
+          <option value="">Select your city…</option>
+          <option>Gurgaon</option>
+          <option>Noida</option>
+          <option>Mumbai</option>
+          <option>Delhi</option>
+          <option>Pune</option>
+          <option>Ahmedabad</option>
+          <option>Lucknow</option>
+          <option>Rajkot</option>
+          <option>Faridabad</option>
+          <option>Vashi</option>
+          <option>Thane</option>
+          <option>Chennai</option>
+          <option>Bangalore</option>
+          <option value="Other">Other (type below)</option>
+        </select>
+        <input id="k-location" placeholder="Type your city" autocomplete="off" class="hidden" style="margin-top:8px;"></div>
+      <div id="companion-fields"></div>
+      <div class="field" style="position:relative;"><label>Whom do you want to meet? <span class="req">*</span></label>
+        <input id="k-host-search" placeholder="Type a name to search…" autocomplete="off" oninput="filterHostSuggestions()" onfocus="filterHostSuggestions()">
+        <input type="hidden" id="k-host">
+        <div id="k-host-suggestions" class="host-suggestions hidden"></div></div>
+      <div class="field"><label>Visitor Type <span class="req">*</span></label>
+        <select id="k-purpose" onchange="togglePurposeOther()">
+          <option value="">Select visitor type…</option>
+          <option>Candidate</option>
+          <option>Vendor</option>
+          <option>Client</option>
+          <option>Partner</option>
+          <option>Delivery</option>
+          <option>Consultant</option>
+          <option>Interview</option>
+          <option>Training</option>
+          <option>Auditor</option>
+          <option>Banker</option>
+          <option>Family</option>
+          <option value="Other">Other (type below)</option>
+        </select>
+        <input id="k-purpose-other" placeholder="Type visitor type" autocomplete="off" class="hidden" style="margin-top:8px;"></div>
+
+      <button class="btn btn-primary btn-full" onclick="goToSelfieStep()">Continue to Photo →</button>
+    </div>
+
+    <!-- STEP 2: SELFIE ONLY -->
+    <div id="step-selfie" class="hidden">
+      <div class="photo-block" id="selfie-block">
+        <label>Take a Selfie <span class="req">*</span></label>
+        <div class="cam-shell cam-shell-circle" id="self-shell">
+          <div class="cam-placeholder" id="self-placeholder">
+            <span style="font-size:26px;">📷</span>
+            <span>Tap "Enable Camera" to take your photo</span>
+          </div>
+          <video id="self-video" class="hidden" autoplay playsinline muted></video>
+          <img id="self-photo" class="hidden">
+          <div class="cam-badge hidden" id="self-badge"><span class="dot"></span>LIVE</div>
+        </div>
+        <canvas id="self-canvas" class="hidden"></canvas>
+        <div class="photo-actions">
+          <button class="btn btn-outline" style="flex:1;" id="btn-enable-self" onclick="enableCamera('self')">📷 Enable Camera</button>
+          <button class="btn btn-amber hidden" style="flex:1;" id="btn-capture-self" onclick="capturePhoto('self')">📸 Capture</button>
+          <button class="btn btn-outline hidden" style="flex:1;" id="btn-retake-self" onclick="retakePhoto('self')">↺ Retake</button>
+        </div>
+        <div class="photo-status" id="self-status">No photo captured yet</div>
+      </div>
+      <button class="btn btn-outline btn-full" style="margin-bottom:10px;" onclick="backToForm()">← Back</button>
+      <button class="btn btn-primary btn-full" id="btn-continue" onclick="submitCheckin()">Complete Check-in →</button>
+    </div>
+
+    <!-- PENDING APPROVAL -->
+    <div id="step-pending" class="hidden qr-result">
+      <div class="spinner-ring" id="pending-spinner">⏳</div>
+      <h3 style="font-family:var(--font-display);margin:14px 0 6px;">Waiting for Approval</h3>
+      <p class="sub" id="pending-text"></p>
+      <p class="small-muted" style="margin-top:18px;">Please wait here — your host will approve shortly. This page updates automatically.</p>
+    </div>
+
+    <!-- REJECTED -->
+    <div id="step-rejected" class="hidden qr-result">
+      <div style="font-size:42px;">🚫</div>
+      <h3 id="rejected-heading" style="font-family:var(--font-display);margin:6px 0;">Visit Not Approved</h3>
+      <p class="sub" id="rejected-text"></p>
+      <button class="btn btn-primary btn-full" onclick="resetForm()" style="margin-top:14px;">Done</button>
+    </div>
+
+    <!-- SUCCESS -->
+    <div id="step-success" class="hidden qr-result">
+      <div style="font-size:42px;">✅</div>
+      <h3 style="font-family:var(--font-display);margin:6px 0;">Approved — Checked In!</h3>
+      <p class="sub" id="welcome-text"></p>
+      <div id="qrcode-canvas"></div>
+      <p class="sub">Show this QR code at the gate to enter, and again when you leave.</p>
+      <button class="btn btn-primary btn-full" onclick="resetForm()" style="margin-top:14px;">Done · New Visitor</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   📧 EMAILJS CONFIG — paste your 3 keys here when ready.
+   Get them from https://dashboard.emailjs.com
+   1. EMAILJS_SERVICE_ID  -> Email Services tab
+   2. EMAILJS_TEMPLATE_ID -> Email Templates tab
+   3. EMAILJS_PUBLIC_KEY  -> Account > General
+   Until these are filled in, check-in still works fine —
+   emails are simply skipped (no error shown to the visitor).
+   ============================================================ */
+const EMAILJS_SERVICE_ID  = 'service_gfobbzd';
+const EMAILJS_TEMPLATE_ID = 'template_2luykyl';
+const EMAILJS_PUBLIC_KEY  = 'cKW9WBEaRkHYr9XCm';
+
+const emailConfigured = ![EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, EMAILJS_PUBLIC_KEY].some(v=>v.startsWith('YOUR_'));
+if(emailConfigured && window.emailjs){ emailjs.init({publicKey: EMAILJS_PUBLIC_KEY}); }
+
+/* ============================================================
+   📁 GOOGLE APPS SCRIPT CONFIG — for Drive photo storage,
+   Google Sheet logging, and a rich HTML email with the visitor's
+   photo embedded. See setup instructions provided separately.
+   Paste your deployed Web App URL below.
+   When this is set, it REPLACES the EmailJS email below (to avoid
+   sending two emails) — EmailJS stays as a fallback until then.
+   ============================================================ */
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyzGQnSYrGu7McyLtXZ9LVJNLb-JbjaDxMI-Pi6LjWAk4IOuPCRdPpHkWWCbgPJilCnrQ/exec';
+const driveConfigured = !APPS_SCRIPT_URL.startsWith('YOUR_');
+
+async function sendToDrive(visitor, hostEmp){
+  if(!driveConfigured) return {sent:false};
+  try{
+    await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: {'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({
+        visitorId: visitor.id,
+        name: visitor.name,
+        mobile: visitor.mobile,
+        company: visitor.company || '',
+        location: visitor.location,
+        office: visitor.office,
+        hostName: hostEmp ? hostEmp.name : '',
+        hostEmail: hostEmp ? hostEmp.email : '',
+        purpose: visitor.purpose || '—',
+        checkinTime: new Date(visitor.checkinTime).toLocaleString('en-IN',{dateStyle:'medium',timeStyle:'short'}),
+        photoBase64: visitor.photo || '',
+        idPhotoBase64: visitor.idPhoto || '',
+        groupSize: visitor.groupSize || 1,
+        companions: (visitor.companions || []).join(', ')
+      })
+    });
+    /* no-cors mode means we can't read the response, so we assume success if fetch didn't throw */
+    return {sent:true};
+  }catch(e){
+    console.error('Apps Script sync failed:', e);
+    return {sent:false, error:e};
+  }
+}
+
+async function sendHostEmail(visitor, hostEmp){
+  if(driveConfigured) return {sent:false}; /* Apps Script handles email instead */
+  if(!emailConfigured || !hostEmp || !hostEmp.email || !window.emailjs) return {sent:false};
+  try{
+    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+      to_email: hostEmp.email,
+      host_name: hostEmp.name,
+      visitor_name: visitor.name,
+      mobile: visitor.mobile,
+      location: visitor.location,
+      purpose: visitor.purpose || '—',
+      checkin_time: new Date(visitor.checkinTime).toLocaleString('en-IN',{dateStyle:'medium',timeStyle:'short'})
+    });
+    return {sent:true};
+  }catch(e){
+    console.error('EmailJS send failed:', e);
+    return {sent:false, error:e};
+  }
+}
+
+/* Shared storage keys so this page stays compatible with the AMBAK admin/reception dashboard */
+/* ============================================================
+   🔥 FIREBASE CONFIG — Realtime Database URL
+   ============================================================ */
+const FIREBASE_URL = 'https://ambak-vms-default-rtdb.asia-southeast1.firebasedatabase.app';
+
+const S = {
+  async getAll(key, fallback){
+    try{
+      const res = await fetch(`${FIREBASE_URL}/${key}.json`);
+      const data = await res.json();
+      return (data === null || data === undefined) ? fallback : data;
+    }catch(e){ console.error('Firebase read failed:', e); return fallback; }
+  },
+  async set(key, val){
+    try{
+      await fetch(`${FIREBASE_URL}/${key}.json`, {
+        method: 'PUT',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(val)
+      });
+    }catch(e){ console.error('Firebase write failed:', e); }
+  }
+};
+
+let streams = { id: null, self: null };
+let capturedPhotos = { id: null, self: null };
+let groupSize = 1;
+
+function changeGroupSize(delta){
+  groupSize = Math.max(1, Math.min(10, groupSize + delta));
+  document.getElementById('group-size-display').textContent = groupSize;
+  renderCompanionFields();
+}
+function renderCompanionFields(){
+  const wrap = document.getElementById('companion-fields');
+  wrap.innerHTML = '';
+}
+let EMPLOYEES = [];
+const CURRENT_OFFICE = new URLSearchParams(window.location.search).get('office') || '';
+const URL_CODE = new URLSearchParams(window.location.search).get('code') || '';
+
+/* ============================================================
+   🔐 ROTATING CHECK-IN CODE
+   A 4-digit code that changes automatically every 30 minutes.
+   Computed from the current time + a shared secret — no server
+   call needed, and it always matches what's shown on the
+   reception dashboard at the same moment.
+   Prevents someone from checking in remotely using just a photo
+   of the printed QR, since they won't know the current code.
+   ============================================================ */
+const CHECKIN_SECRET = 'AMBAK-SECRET-2026';
+function simpleHash(str){
+  let hash = 0;
+  for(let i=0;i<str.length;i++){ hash = ((hash<<5)-hash)+str.charCodeAt(i); hash|=0; }
+  return Math.abs(hash);
+}
+function getCurrentCheckinCode(){
+  const windowId = Math.floor(Date.now() / (30*60*1000));
+  const hash = simpleHash(CHECKIN_SECRET + '-' + windowId);
+  return String(hash % 10000).padStart(4, '0');
+}
+
+/* Verhoeff checksum — the algorithm UIDAI uses in the last digit of every
+   real Aadhaar number. This only confirms the number is well-formed (catches
+   typos and made-up numbers); it does NOT verify identity or match a name —
+   that requires a paid UIDAI-linked e-KYC service. */
+function isValidAadhaarChecksum(num){
+  const d = [
+    [0,1,2,3,4,5,6,7,8,9],[1,2,3,4,0,6,7,8,9,5],[2,3,4,0,1,7,8,9,5,6],
+    [3,4,0,1,2,8,9,5,6,7],[4,0,1,2,3,9,5,6,7,8],[5,9,8,7,6,0,4,3,2,1],
+    [6,5,9,8,7,1,0,4,3,2],[7,6,5,9,8,2,1,0,4,3],[8,7,6,5,9,3,2,1,0,4],
+    [9,8,7,6,5,4,3,2,1,0]
+  ];
+  const p = [
+    [0,1,2,3,4,5,6,7,8,9],[1,5,7,6,2,8,3,0,9,4],[5,8,0,3,7,9,6,1,4,2],
+    [8,9,1,6,0,4,3,5,2,7],[9,4,5,3,1,2,6,8,7,0],[4,2,8,6,5,7,3,9,0,1],
+    [2,7,9,3,8,0,6,4,1,5],[7,0,4,6,9,1,3,2,5,8]
+  ];
+  let c = 0;
+  const digits = num.split('').reverse().map(Number);
+  for(let i=0;i<digits.length;i++){ c = d[c][p[i%8][digits[i]]]; }
+  return c === 0;
+}
+
+let idMethod = 'photo';
+function setIdMethod(method){
+  idMethod = method;
+  document.getElementById('id-method-select').value = method;
+  document.getElementById('id-method-photo').classList.toggle('hidden', method!=='photo');
+  document.getElementById('id-method-aadhaar').classList.toggle('hidden', method!=='aadhaar');
+}
+
+function togglePurposeOther(){
+  const sel = document.getElementById('k-purpose');
+  const box = document.getElementById('k-purpose-other');
+  if(sel.value === 'Other'){
+    box.classList.remove('hidden');
+    box.value = '';
+    box.focus();
+  } else {
+    box.classList.add('hidden');
+    box.value = '';
+  }
+}
+
+function handleLocationSelect(){
+  const sel = document.getElementById('k-location-select');
+  const box = document.getElementById('k-location');
+  if(sel.value === 'Other'){
+    box.classList.remove('hidden');
+    box.value = '';
+    box.focus();
+  } else {
+    box.classList.add('hidden');
+    box.value = sel.value;
+  }
+}
+
+function setLocationValue(city){
+  const sel = document.getElementById('k-location-select');
+  const box = document.getElementById('k-location');
+  const match = [...sel.options].some(o => o.value === city);
+  if(match){
+    sel.value = city;
+    box.classList.add('hidden');
+    box.value = city;
+  } else {
+    sel.value = 'Other';
+    box.classList.remove('hidden');
+    box.value = city;
+  }
+}
+
+async function loadEmployees(){
+  EMPLOYEES = await S.getAll('employees', []);
+  if(EMPLOYEES.length===0){
+    /* same defaults as the admin dashboard, so both stay in sync on first run */
+    EMPLOYEES = [
+      {id:'e1',name:'Rohit Sharma',email:'rohit@ambak.com',dept:'Sales'},
+      {id:'e2',name:'Priya Verma',email:'priya@ambak.com',dept:'HR'},
+      {id:'e3',name:'Aman Gupta',email:'aman@ambak.com',dept:'Operations'}
+    ];
+    await S.set('employees', EMPLOYEES);
+  }
+  EMPLOYEES = EMPLOYEES.filter(e => e.active !== false);
+  EMPLOYEES.sort((a,b)=>a.name.localeCompare(b.name));
+  const suggBox = document.getElementById('k-host-suggestions');
+  if(suggBox && !suggBox.classList.contains('hidden')){ filterHostSuggestions(); }
+}
+
+function filterHostSuggestions(){
+  const q = document.getElementById('k-host-search').value.toLowerCase().trim();
+  const box = document.getElementById('k-host-suggestions');
+  const matches = q
+    ? EMPLOYEES.filter(e => e.name.toLowerCase().includes(q) || (e.dept||'').toLowerCase().includes(q))
+    : EMPLOYEES;
+  const list = matches.slice(0, 30);
+  box.innerHTML = list.length
+    ? list.map(e=>`<div class="opt" onclick="selectHost('${e.id}')">${e.name} <span class="dept">— ${e.dept||'—'}</span></div>`).join('')
+    : `<div class="empty">${EMPLOYEES.length ? 'No matching employee' : 'No employees set up yet'}</div>`;
+  box.classList.remove('hidden');
+}
+function selectHost(id){
+  const emp = EMPLOYEES.find(e=>e.id===id);
+  if(!emp) return;
+  document.getElementById('k-host').value = id;
+  document.getElementById('k-host-search').value = emp.name;
+  document.getElementById('k-host-suggestions').classList.add('hidden');
+}
+document.addEventListener('click', (e)=>{
+  const wrap = document.getElementById('k-host-suggestions');
+  const input = document.getElementById('k-host-search');
+  if(wrap && !wrap.contains(e.target) && e.target !== input){ wrap.classList.add('hidden'); }
+});
+loadEmployees();
+setInterval(loadEmployees, 20000);
+
+document.getElementById('k-mobile').addEventListener('input', function(){
+  document.getElementById('mobile-hint').textContent = '';
+  if(this.value.length === 10){ lookupReturningVisitor(this.value); }
+});
+
+async function lookupReturningVisitor(mobile){
+  try{
+    const res = await fetch(`${FIREBASE_URL}/visitors.json`);
+    const data = await res.json();
+    if(!data || typeof data !== 'object') return;
+
+    const records = Object.values(data).filter(v => v && v.mobile === mobile);
+    if(records.length === 0) return;
+    records.sort((a,b)=>(b.checkinTime||0)-(a.checkinTime||0));
+    const latest = records[0];
+
+    /* If they already have a check-in from within the last ~90 minutes that's
+       still active (pending/approved/postponed), offer to resume it directly
+       instead of making them fill the form again. */
+    const RESUME_WINDOW_MS = 90 * 60 * 1000;
+    const isResumable = ['pending','approved','postponed'].includes(latest.status)
+      && latest.checkinTime && (Date.now() - latest.checkinTime < RESUME_WINDOW_MS);
+    if(isResumable){
+      resumableVisitor = latest;
+      const statusPhrase = latest.status === 'postponed' ? 'waiting for them to be free'
+        : latest.status === 'approved' ? 'already approved — just show your gate QR'
+        : 'awaiting approval';
+      document.getElementById('resume-text').textContent = `You already checked in to meet ${latest.hostName} and are ${statusPhrase}.`;
+      document.getElementById('resume-banner').classList.remove('hidden');
+    } else {
+      resumableVisitor = null;
+      document.getElementById('resume-banner').classList.add('hidden');
+    }
+
+    if(latest.name) document.getElementById('k-name').value = latest.name;
+    if(latest.company) document.getElementById('k-company').value = latest.company;
+    if(latest.location) setLocationValue(latest.location);
+    if(latest.photo) applyStoredPhoto('self', latest.photo);
+
+    document.getElementById('mobile-hint').textContent = `✓ Welcome back, ${latest.name}! We've filled in your earlier details and photos — tap Retake if you'd like new ones.`;
+  }catch(e){ console.error('Returning visitor lookup failed:', e); }
+}
+
+let resumableVisitor = null;
+function resumeCheckin(){
+  if(!resumableVisitor) return;
+  const v = resumableVisitor;
+  document.getElementById('step-form').classList.add('hidden');
+  document.getElementById('step-selfie').classList.add('hidden');
+  document.getElementById('resume-banner').classList.add('hidden');
+  document.getElementById('p2').classList.add('done');
+  document.getElementById('step-pending').classList.remove('hidden');
+  document.getElementById('pending-text').textContent = `Resuming your check-in…`;
+
+  pollForApproval(v.id, v.name, v.hostName, v.groupSize || 1);
+}
+
+function applyStoredPhoto(target, dataUrl){
+  capturedPhotos[target] = dataUrl;
+  document.getElementById(`${target}-photo`).src = dataUrl;
+  document.getElementById(`${target}-photo`).classList.remove('hidden');
+  document.getElementById(`${target}-placeholder`).classList.add('hidden');
+  document.getElementById(`${target}-video`).classList.add('hidden');
+  document.getElementById(`${target}-badge`).classList.add('hidden');
+  document.getElementById(`btn-enable-${target}`).classList.add('hidden');
+  document.getElementById(`btn-upload-${target}`)?.classList.add('hidden');
+  document.getElementById(`btn-capture-${target}`).classList.add('hidden');
+  document.getElementById(`btn-retake-${target}`).classList.remove('hidden');
+  const status = document.getElementById(`${target}-status`);
+  status.textContent = '✓ Using photo from your last visit — tap Retake for a new one';
+  status.classList.add('ok');
+  if(target === 'id'){
+    document.getElementById('id-guide-frame').classList.add('hidden');
+    document.getElementById('id-confirm-wrap').classList.remove('hidden');
+    document.getElementById('id-confirm-check').checked = false;
+  }
+}
+
+if(CURRENT_OFFICE){ document.getElementById('office-badge').textContent = '📍 ' + CURRENT_OFFICE + ' Branch'; }
+if(URL_CODE){
+  document.getElementById('k-checkincode').value = URL_CODE;
+  document.getElementById('code-manual-wrap').classList.add('hidden');
+  document.getElementById('code-auto-pill').classList.remove('hidden');
+  document.getElementById('code-auto-value').textContent = URL_CODE;
+}
+
+function goToSelfieStep(){
+  const name = document.getElementById('k-name').value.trim();
+  const mobile = document.getElementById('k-mobile').value.trim();
+  const company = document.getElementById('k-company').value.trim();
+  const location = document.getElementById('k-location').value.trim();
+  const hostId = document.getElementById('k-host').value;
+  const purposeSelect = document.getElementById('k-purpose').value;
+  const purpose = purposeSelect === 'Other' ? document.getElementById('k-purpose-other').value.trim() : purposeSelect;
+
+  if(!name || !mobile || !company || !location){
+    alert('Please fill all required fields above.');
+    window.scrollTo({top:0,behavior:'smooth'});
+    return;
+  }
+  if(!/^[0-9]{10}$/.test(mobile)){ alert('Please enter a valid 10-digit mobile number'); return; }
+  if(!hostId){ alert('Please select who you are meeting'); return; }
+  if(!purpose){ alert('Please select a visitor type'); return; }
+  const enteredCode = document.getElementById('k-checkincode').value.trim();
+  if(!enteredCode){ alert('Please enter the reception check-in code'); return; }
+  if(enteredCode !== getCurrentCheckinCode()){
+    alert('Incorrect check-in code. Please ask the reception desk for the current code — it changes every 30 minutes.');
+    return;
+  }
+  document.getElementById('step-form').classList.add('hidden');
+  document.getElementById('step-selfie').classList.remove('hidden');
+  document.getElementById('p2').classList.add('done');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function backToForm(){
+  document.getElementById('step-selfie').classList.add('hidden');
+  document.getElementById('step-form').classList.remove('hidden');
+  document.getElementById('p2').classList.remove('done');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+async function enableCamera(target){
+  const video = document.getElementById(`${target}-video`);
+  const placeholder = document.getElementById(`${target}-placeholder`);
+  const badge = document.getElementById(`${target}-badge`);
+  const facing = target === 'id' ? 'environment' : 'user';
+  try{
+    const s = await navigator.mediaDevices.getUserMedia({video:{facingMode:facing}});
+    streams[target] = s;
+    video.srcObject = s;
+    video.classList.remove('hidden');
+    placeholder.classList.add('hidden');
+    badge.classList.remove('hidden');
+    if(target === 'id'){
+      document.getElementById('id-guide-frame').classList.remove('hidden');
+      document.getElementById('id-confirm-wrap').classList.add('hidden');
+      document.getElementById('id-confirm-check').checked = false;
+    }
+    document.getElementById(`btn-enable-${target}`).classList.add('hidden');
+    document.getElementById(`btn-upload-${target}`)?.classList.add('hidden');
+    document.getElementById(`btn-capture-${target}`).classList.remove('hidden');
+    document.getElementById(`${target}-status`).textContent = target === 'id'
+      ? 'Camera ready — fit your ID card inside the box and capture'
+      : 'Camera ready — center your face and capture';
+  }catch(e){
+    document.getElementById(`${target}-status`).textContent = 'Camera not available on this device/browser.';
+  }
+}
+
+function capturePhoto(target){
+  const video = document.getElementById(`${target}-video`);
+  const canvas = document.getElementById(`${target}-canvas`);
+  const img = document.getElementById(`${target}-photo`);
+  canvas.width = video.videoWidth || 480;
+  canvas.height = video.videoHeight || 360;
+  canvas.getContext('2d').drawImage(video,0,0,canvas.width,canvas.height);
+  capturedPhotos[target] = canvas.toDataURL('image/jpeg',0.7);
+
+  img.src = capturedPhotos[target];
+  img.classList.remove('hidden');
+  video.classList.add('hidden');
+  document.getElementById(`${target}-badge`).classList.add('hidden');
+  if(target === 'id'){
+    document.getElementById('id-guide-frame').classList.add('hidden');
+    document.getElementById('id-confirm-wrap').classList.remove('hidden');
+  }
+
+  if(streams[target]){ streams[target].getTracks().forEach(t=>t.stop()); streams[target]=null; }
+
+  document.getElementById(`btn-capture-${target}`).classList.add('hidden');
+  document.getElementById(`btn-retake-${target}`).classList.remove('hidden');
+  const status = document.getElementById(`${target}-status`);
+  status.textContent = '✓ Photo captured';
+  status.classList.add('ok');
+}
+
+async function retakePhoto(target){
+  resetCameraUI(target);
+}
+
+function handleFileUpload(target, inputEl){
+  const file = inputEl.files && inputEl.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev){
+    const dataUrl = ev.target.result;
+    capturedPhotos[target] = dataUrl;
+    const img = document.getElementById(`${target}-photo`);
+    img.src = dataUrl;
+    img.classList.remove('hidden');
+    document.getElementById(`${target}-placeholder`).classList.add('hidden');
+    document.getElementById(`${target}-video`).classList.add('hidden');
+    document.getElementById(`${target}-badge`).classList.add('hidden');
+    if(streams[target]){ streams[target].getTracks().forEach(t=>t.stop()); streams[target]=null; }
+    document.getElementById(`btn-enable-${target}`).classList.add('hidden');
+    document.getElementById(`btn-upload-${target}`)?.classList.add('hidden');
+    document.getElementById(`btn-capture-${target}`).classList.add('hidden');
+    document.getElementById(`btn-retake-${target}`).classList.remove('hidden');
+    if(target === 'id'){
+      document.getElementById('id-guide-frame').classList.add('hidden');
+      document.getElementById('id-confirm-wrap').classList.remove('hidden');
+    }
+    const status = document.getElementById(`${target}-status`);
+    status.textContent = '✓ Photo uploaded';
+    status.classList.add('ok');
+  };
+  reader.readAsDataURL(file);
+  inputEl.value = '';
+}
+
+async function submitCheckin(){
+  const btn = document.getElementById('btn-continue');
+  if(btn.disabled) return; /* guard against double-tap / double-click duplicate submits */
+
+  const name = document.getElementById('k-name').value.trim();
+  const mobile = document.getElementById('k-mobile').value.trim();
+  const company = document.getElementById('k-company').value.trim();
+  const location = document.getElementById('k-location').value.trim();
+  const office = CURRENT_OFFICE; /* silently tagged from the URL if this kiosk link includes one; not asked on the form */
+  const hostId = document.getElementById('k-host').value;
+  const purposeSelect = document.getElementById('k-purpose').value;
+  const purpose = purposeSelect === 'Other' ? document.getElementById('k-purpose-other').value.trim() : purposeSelect;
+  const hostEmp = EMPLOYEES.find(e=>e.id===hostId);
+  const hostName = hostEmp ? hostEmp.name : '';
+
+  const companions = [];
+  if(!capturedPhotos.self){
+    alert('Your photo is mandatory. Please enable the camera and capture your photo before checking in.');
+    document.getElementById('self-status').textContent = 'Photo is required — please capture it above.';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Checking in…';
+
+  const id = 'v' + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+  const visitor = {
+    id, name, mobile, company, location,
+    hostId, hostName,
+    purpose, photo: capturedPhotos.self,
+    office,
+    groupSize, companions, gateEntryScanned: false,
+    checkinTime: Date.now(), checkoutTime: null,
+    status: 'pending', source: 'kiosk'
+  };
+
+  try{
+    await fetch(`${FIREBASE_URL}/visitors/${visitor.id}.json`, {
+      method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(visitor)
+    });
+  }catch(e){ console.error('Firebase write failed:', e); }
+
+  /* Fire Drive/Sheet/Email notification in the background — don't make the visitor wait for it */
+  if(driveConfigured){ sendToDrive(visitor, hostEmp); }
+  else { sendHostEmail(visitor, hostEmp); }
+
+  document.getElementById('step-selfie').classList.add('hidden');
+  document.getElementById('step-pending').classList.remove('hidden');
+  document.getElementById('p2').classList.add('done');
+  const groupNote = groupSize > 1 ? ` (+${groupSize-1} more)` : '';
+  document.getElementById('pending-text').textContent = `${name}${groupNote}, your visit to meet ${hostName} is awaiting approval.`;
+
+  pollForApproval(id, name, hostName, groupSize);
+}
+
+let approvalPollTimer = null;
+let approvalPollCount = 0;
+async function pollForApproval(visitorId, name, hostName, groupSizeAtSubmit){
+  clearInterval(approvalPollTimer);
+  approvalPollCount = 0;
+  const checkOnce = async ()=>{
+    approvalPollCount++;
+    try{
+      const res = await fetch(`${FIREBASE_URL}/visitors/${visitorId}.json`);
+      const v = await res.json();
+      if(!v) return;
+
+      if(v.status === 'approved' || v.status === 'in'){
+        clearInterval(approvalPollTimer);
+        document.getElementById('step-pending').classList.add('hidden');
+        document.getElementById('step-rejected').classList.add('hidden');
+        document.getElementById('step-success').classList.remove('hidden');
+        document.getElementById('p3').classList.add('done');
+        const groupNote = groupSizeAtSubmit > 1 ? ` (+${groupSizeAtSubmit-1} more)` : '';
+        document.getElementById('welcome-text').innerHTML = `${name}${groupNote}, meeting ${hostName} — approved ✓`;
+        if(v.status === 'approved' && v.approvedTime){
+          const expiryMs = v.approvedTime + 45*60*1000;
+          const remain = Math.max(0, expiryMs - Date.now());
+          const mins = Math.floor(remain/60000), secs = Math.floor((remain%60000)/1000);
+          document.getElementById('welcome-text').innerHTML += `<br><span style="color:var(--amber-deep);font-weight:700;">Show this at the gate within ${mins}m ${String(secs).padStart(2,'0')}s</span>`;
+        }
+        const box = document.getElementById('qrcode-canvas');
+        box.innerHTML = '';
+        new QRCode(box, {text:visitorId, width:170, height:170, colorDark:'#111827', colorLight:'#ffffff'});
+      } else if(v.status === 'postponed'){
+        /* Host wants to meet later — friendlier framing than a hard reject, and
+           we keep polling so the page updates itself the moment they approve. */
+        document.getElementById('step-pending').classList.add('hidden');
+        document.getElementById('step-rejected').classList.remove('hidden');
+        document.getElementById('step-rejected').querySelector('div').textContent = '⏳';
+        document.getElementById('rejected-heading').textContent = 'Please Wait a Little Longer';
+        document.getElementById('rejected-text').innerHTML = `${hostName} will meet you a little later.`
+          + (v.rejectReason ? `<div style="margin-top:12px;padding:10px 16px;background:#EEF0FF;border-left:3px solid var(--amber);border-radius:6px;color:var(--amber-deep);font-weight:700;font-size:13.5px;text-align:left;">Note: ${v.rejectReason}</div>` : '')
+          + `<div style="margin-top:10px;">Please wait here — this page will update automatically the moment they're ready.</div>`;
+        if(approvalPollCount >= 1200){ clearInterval(approvalPollTimer); }
+      } else if(v.status === 'rejected'){
+        /* Keep polling even after a decline — if the host changes their mind later
+           and re-approves the same visitor, this same screen will pick it up and
+           switch to the success/QR screen automatically, without a form refill. */
+        document.getElementById('step-pending').classList.add('hidden');
+        document.getElementById('step-rejected').classList.remove('hidden');
+        document.getElementById('step-rejected').querySelector('div').textContent = '🚫';
+        document.getElementById('rejected-heading').textContent = 'Visit Not Approved';
+        document.getElementById('rejected-text').innerHTML = `${hostName} was unable to approve this visit right now.`
+          + (v.rejectReason ? `<div style="margin-top:12px;padding:10px 16px;background:#EEF0FF;border-left:3px solid var(--amber);border-radius:6px;color:var(--amber-deep);font-weight:700;font-size:13.5px;text-align:left;">Reason: ${v.rejectReason}</div>` : '')
+          + `<div style="margin-top:10px;">If your host changes their mind, this page will update automatically — no need to refill the form.</div>`;
+        if(approvalPollCount >= 1200){ clearInterval(approvalPollTimer); } /* stop after ~60 minutes to avoid polling forever if abandoned */
+      } else if(approvalPollCount >= 90){ /* ~4.5 minutes at 3s interval */
+        document.getElementById('pending-text').textContent = `Still waiting — this is taking longer than usual. Please check with reception if you'd like.`;
+      }
+    }catch(e){ console.error('Approval poll failed:', e); }
+  };
+  await checkOnce();
+  approvalPollTimer = setInterval(checkOnce, 3000);
+}
+
+function resetCameraUI(target){
+  capturedPhotos[target] = null;
+  if(streams[target]){ streams[target].getTracks().forEach(t=>t.stop()); streams[target]=null; }
+  document.getElementById(`${target}-video`).classList.add('hidden');
+  document.getElementById(`${target}-photo`).classList.add('hidden');
+  document.getElementById(`${target}-placeholder`).classList.remove('hidden');
+  document.getElementById(`${target}-badge`).classList.add('hidden');
+  document.getElementById(`btn-enable-${target}`).classList.remove('hidden');
+  document.getElementById(`btn-upload-${target}`)?.classList.remove('hidden');
+  document.getElementById(`btn-capture-${target}`).classList.add('hidden');
+  document.getElementById(`btn-retake-${target}`).classList.add('hidden');
+  const status = document.getElementById(`${target}-status`);
+  status.textContent = 'No photo captured yet';
+  status.classList.remove('ok');
+  if(target === 'id'){
+    document.getElementById('id-guide-frame').classList.add('hidden');
+    document.getElementById('id-confirm-wrap').classList.add('hidden');
+    document.getElementById('id-confirm-check').checked = false;
+  }
+}
+
+function resetForm(){
+  clearInterval(approvalPollTimer);
+  loadEmployees();
+  resumableVisitor = null;
+  document.getElementById('resume-banner').classList.add('hidden');
+  ['k-name','k-mobile','k-company','k-location','k-host-search','k-host'].forEach(id=>document.getElementById(id).value='');
+  if(!URL_CODE){ document.getElementById('k-checkincode').value=''; }
+  document.getElementById('k-location-select').value = '';
+  document.getElementById('k-location').classList.add('hidden');
+  document.getElementById('k-host-suggestions').classList.add('hidden');
+  document.getElementById('k-purpose').value = '';
+  document.getElementById('k-purpose-other').value = '';
+  document.getElementById('k-purpose-other').classList.add('hidden');
+  groupSize = 1;
+  document.getElementById('group-size-display').textContent = '1';
+  renderCompanionFields();
+  resetCameraUI('self');
+  const btn = document.getElementById('btn-continue');
+  btn.disabled = false;
+  btn.textContent = 'Complete Check-in →';
+  document.getElementById('step-success').classList.add('hidden');
+  document.getElementById('step-pending').classList.add('hidden');
+  document.getElementById('step-rejected').classList.add('hidden');
+  document.getElementById('step-selfie').classList.add('hidden');
+  document.getElementById('step-form').classList.remove('hidden');
+  document.getElementById('p2').classList.remove('done');
+  document.getElementById('p3').classList.remove('done');
+}
+</script>
+</body>
+</html>
